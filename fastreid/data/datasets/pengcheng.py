@@ -9,12 +9,11 @@ import os.path as osp
 import re
 import warnings
 
-from fastreid.data.datasets.bases import ImageDataset
-#from ..datasets import DATASET_REGISTRY
+from .bases import ImageDataset
+from ..datasets import DATASET_REGISTRY
 
-
-#@DATASET_REGISTRY.register()
-class pengcheng(ImageDataset):
+@DATASET_REGISTRY.register()
+class Pengcheng(ImageDataset):
     """Market1501.
 
     Reference:
@@ -48,33 +47,50 @@ class pengcheng(ImageDataset):
                           '"Market-1501-v15.09.15".')
         self.label_txt=osp.join(data_dir,'train/label.txt')
         self.train_dir = osp.join(data_dir, 'train/images')
-        #self.query_dir = osp.join(self.data_dir, 'image_A/image_A/query')
-        #self.gallery_dir = osp.join(self.data_dir, 'image_A/image_A/gallery')
+        self.query_dir = osp.join(data_dir, 'market/query')
+        self.gallery_dir = osp.join(data_dir, 'market/gallery')
         #self.extra_gallery_dir = osp.join(self.data_dir, 'images')
         #self.market1501_500k = market1501_500k
 
         required_files = [
             self.data_dir,
             self.train_dir,
-            #self.query_dir,
-            #self.gallery_dir,
+            self.query_dir,
+            self.gallery_dir,
         ]
-        #if self.market1501_500k:
-        #    required_files.append(self.extra_gallery_dir)
+        # if self.market1501_500k:
+        #     required_files.append(self.extra_gallery_dir)
         #self.check_before_run(required_files)
         self.count=0
         self.label = {}
         self.process_label(self.label_txt)
-        print("11",self.count)
-        #print("22",self.label)
 
         train = self.process_dir(self.train_dir)
-        print("11",len(train))
-        #query = self.process_dir(self.query_dir, is_train=False)
-        #gallery = self.process_dir(self.gallery_dir, is_train=False)
+        #print("11",len(train))
+        query = self.process_query(self.query_dir, is_train=False)
+        gallery = self.process_query(self.gallery_dir, is_train=False)
         #if self.market1501_500k:
         #    gallery += self.process_dir(self.extra_gallery_dir, is_train=False)
-        super(pengcheng, self).__init__(train, query, gallery, **kwargs)
+        super(Pengcheng, self).__init__(train, query, gallery, **kwargs)
+
+
+    def process_query(self, dir_path, is_train=True):
+        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+        pattern = re.compile(r'([-\d]+)_c(\d)')
+
+        data = []
+        for img_path in img_paths:
+            pid, camid = map(int, pattern.search(img_path).groups())
+            if pid == -1:
+                continue  # junk images are just ignored
+            assert 0 <= pid <= 1501  # pid == 0 means background
+            assert 1 <= camid <= 6
+            camid -= 1  # index starts from 0
+            if is_train:
+                pid = self.dataset_name + "_" + str(pid)
+            data.append((img_path, pid, camid))
+
+        return data
 
 
 
@@ -82,6 +98,7 @@ class pengcheng(ImageDataset):
         img_paths = glob.glob(osp.join(dir_path, '*.png'))
         #pattern = re.compile(r'([-\d]+)_c(\d)')
         data = []
+        camid=1
         for img_path in img_paths:
             img=img_path.split("/")[-1]
             if img in self.label:
@@ -94,7 +111,7 @@ class pengcheng(ImageDataset):
             # camid -= 1  # index starts from 0
                 if is_train:
                     pid = self.dataset_name + "_" + str(pid)
-                data.append((img_path, pid))
+                data.append((img_path, pid,camid))
 
         return data
 
@@ -102,7 +119,7 @@ class pengcheng(ImageDataset):
         f=open(label_file,encoding="utf-8")
 
         while True:
-            self.count=self.count+1
+            #self.count=self.count+1
             content=f.readline()
             if content=='':
                 break
@@ -112,5 +129,5 @@ class pengcheng(ImageDataset):
         f.close()
 
 if __name__ == "__main__":
-    dataset=pengcheng('/Users/lijiaqi/Downloads/fast-reid-master/datasets')
+    dataset=Pengcheng('/Users/lijiaqi/Downloads/fast-reid-master/datasets')
     print(dataset.label)
