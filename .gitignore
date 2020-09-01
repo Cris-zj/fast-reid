@@ -6,3 +6,6 @@ __pycache__
 logs/
 .ipynb_checkpoints
 logs
+
+# datasets images
+datasets/
