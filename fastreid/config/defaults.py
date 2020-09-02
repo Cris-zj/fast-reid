@@ -150,7 +150,8 @@ _C.INPUT.DO_AUGMIX = False
 _C.INPUT.REA = CN()
 _C.INPUT.REA.ENABLED = False
 _C.INPUT.REA.PROB = 0.5
-_C.INPUT.REA.MEAN = [0.596*255, 0.558*255, 0.497*255]  # [0.485*255, 0.456*255, 0.406*255]
+# [0.485*255, 0.456*255, 0.406*255]
+_C.INPUT.REA.MEAN = [0.596*255, 0.558*255, 0.497*255]
 # Random Patch
 _C.INPUT.RPT = CN()
 _C.INPUT.RPT.ENABLED = False
@@ -233,6 +234,8 @@ _C.SOLVER.IMS_PER_BATCH = 64
 # see 2 images per batch
 _C.TEST = CN()
 
+_C.TEST.SAVE_JSON = False
+
 _C.TEST.EVAL_PERIOD = 20
 
 # Number of images per batch in one process.
@@ -270,4 +273,3 @@ _C.OUTPUT_DIR = "logs/"
 # for about 10k iterations. It usually hurts total time, but can benefit for certain models.
 # If input images have the same or similar sizes, benchmark is often helpful.
 _C.CUDNN_BENCHMARK = False
-

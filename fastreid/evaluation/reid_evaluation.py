@@ -3,10 +3,12 @@
 @author:  liaoxingyu
 @contact: sherlockliao01@gmail.com
 """
+import os
 import copy
 import logging
 from collections import OrderedDict
 from sklearn import metrics
+import json
 
 import numpy as np
 import torch
@@ -31,26 +33,31 @@ class ReidEvaluator(DatasetEvaluator):
         self.features = []
         self.pids = []
         self.camids = []
+        self.img_paths = []
 
     def reset(self):
         self.features = []
         self.pids = []
         self.camids = []
+        self.img_paths = []
 
     def process(self, inputs, outputs):
         self.pids.extend(inputs["targets"])
         self.camids.extend(inputs["camid"])
         self.features.append(outputs.cpu())
+        self.img_paths.extend(inputs['img_path'])
 
     @staticmethod
     def cal_dist(metric: str, query_feat: torch.tensor, gallery_feat: torch.tensor):
-        assert metric in ["cosine", "euclidean"], "must choose from [cosine, euclidean], but got {}".format(metric)
+        assert metric in [
+            "cosine", "euclidean"], "must choose from [cosine, euclidean], but got {}".format(metric)
         if metric == "cosine":
             dist = 1 - torch.mm(query_feat, gallery_feat.t())
         else:
             m, n = query_feat.size(0), gallery_feat.size(0)
             xx = torch.pow(query_feat, 2).sum(1, keepdim=True).expand(m, n)
-            yy = torch.pow(gallery_feat, 2).sum(1, keepdim=True).expand(n, m).t()
+            yy = torch.pow(gallery_feat, 2).sum(
+                1, keepdim=True).expand(n, m).t()
             dist = xx + yy
             dist.addmm_(query_feat, gallery_feat.t(), beta=1, alpha=-2)
             dist = dist.clamp(min=1e-12).sqrt()  # for numerical stability
@@ -93,22 +100,47 @@ class ReidEvaluator(DatasetEvaluator):
             qe_time = self.cfg.TEST.AQE.QE_TIME
             qe_k = self.cfg.TEST.AQE.QE_K
             alpha = self.cfg.TEST.AQE.ALPHA
-            query_features, gallery_features = aqe(query_features, gallery_features, qe_time, qe_k, alpha)
+            query_features, gallery_features = aqe(
+                query_features, gallery_features, qe_time, qe_k, alpha)
 
         if self.cfg.TEST.METRIC == "cosine":
             query_features = F.normalize(query_features, dim=1)
             gallery_features = F.normalize(gallery_features, dim=1)
 
-        dist = self.cal_dist(self.cfg.TEST.METRIC, query_features, gallery_features)
+        dist = self.cal_dist(self.cfg.TEST.METRIC,
+                             query_features, gallery_features)
+        if self.cfg.TEST.SAVE_JSON:
+            indices = np.argsort(dist, axis=1)[:, :200]
+
+            query_imgs = [os.path.split(img_path)[1]
+                          for img_path in self.img_paths[:self._num_query]]
+            gallery_imgs = [os.path.split(img_path)[1]
+                            for img_path in self.img_paths[self._num_query:]]
+
+            infos = dict()
+
+            for i in range(self._num_query):
+                query_img = query_imgs[i]
+                infos[query_img] = []
+                for j in range(indices.shape[1]):
+                    gallery_img = gallery_imgs[indices[i, j]]
+                    infos[query_img].append(gallery_img)
+            with open('results.json', 'w') as f:
+                json.dump(infos, f)
+            print('save json finished!')
+            return
 
         if self.cfg.TEST.RERANK.ENABLED:
             logger.info("Test with rerank setting")
             k1 = self.cfg.TEST.RERANK.K1
             k2 = self.cfg.TEST.RERANK.K2
             lambda_value = self.cfg.TEST.RERANK.LAMBDA
-            q_q_dist = self.cal_dist(self.cfg.TEST.METRIC, query_features, query_features)
-            g_g_dist = self.cal_dist(self.cfg.TEST.METRIC, gallery_features, gallery_features)
-            re_dist = re_ranking(dist, q_q_dist, g_g_dist, k1, k2, lambda_value)
+            q_q_dist = self.cal_dist(
+                self.cfg.TEST.METRIC, query_features, query_features)
+            g_g_dist = self.cal_dist(
+                self.cfg.TEST.METRIC, gallery_features, gallery_features)
+            re_dist = re_ranking(dist, q_q_dist, g_g_dist,
+                                 k1, k2, lambda_value)
             query_features = query_features.numpy()
             gallery_features = gallery_features.numpy()
             cmc, all_AP, all_INP = evaluate_rank(re_dist, query_features, gallery_features,
