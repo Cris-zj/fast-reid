@@ -48,8 +48,8 @@ class Pengcheng(ImageDataset):
                           '"Market-1501-v15.09.15".')
         self.label_txt = osp.join(data_dir, 'train/label.txt')
         self.train_dir = osp.join(data_dir, 'train/images')
-        self.query_dir = osp.join(data_dir, 'query')
-        self.gallery_dir = osp.join(data_dir, 'gallery')
+        self.query_dir = osp.join(data_dir, 'market/query')
+        self.gallery_dir = osp.join(data_dir, 'market/gallery')
 
         required_files = [
             self.data_dir,
@@ -106,7 +106,6 @@ class Pengcheng(ImageDataset):
                 if is_train:
                     pid = self.dataset_name + "_" + str(pid)
                 data.append((img_path, pid, camid))
-
         return data
 
     def process_label(self, label_file):

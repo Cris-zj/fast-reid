@@ -4,4 +4,4 @@ DATASETS:
   NAMES: ("Pengcheng",)
   TESTS: ("Pengcheng",)
 
-OUTPUT_DIR: "logs/NAIC/bagtricks_R101"
+OUTPUT_DIR: "logs/NAIC/bagtricks_R101_0902"
