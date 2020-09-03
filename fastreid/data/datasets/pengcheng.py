@@ -262,7 +262,7 @@ import random
 from .bases import ImageDataset
 from ..datasets import DATASET_REGISTRY
 
-def split(full_list, shuffle=True, ratio=0.06):
+def split(full_list, shuffle=False, ratio=0.06):
     n_total = len(full_list)
     offset = int(n_total * ratio)
     if n_total == 0 or offset < 1:
@@ -307,7 +307,7 @@ class Pengcheng(ImageDataset):
             #               'put data folders such as "bounding_box_train" under '
             #               '"Market-1501-v15.09.15".')
             print("")
-        self.label_txt=osp.join(data_dir,'train/label.txt')
+        self.label_txt=osp.join(data_dir,'train/new_label.txt')
         self.train_dir = osp.join(data_dir, 'train/images')
         self.query_dir = osp.join(data_dir, 'market/query')
         self.gallery_dir = osp.join(data_dir, 'market/gallery')
@@ -332,12 +332,24 @@ class Pengcheng(ImageDataset):
         for i in self.label_new.keys():
             self.lab.append(i)
         #print(self.lab)
-        quelis,trainlis=split(self.lab)
+        #quelis,trainlis=split(self.lab)
+        quelis=[]
+        trainlis=[]
+        f=open('query.txt')
+        for line in f:
+            quelis.append(str(int(line)))
+        f=open('train.txt')
+        for line in f:
+            trainlis.append(str(int(line)))
+        print(len(quelis))
+        print(len(trainlis))
+
         #print(len(trainlis))
         train=self.process_newtrain(self.train_dir,trainlis)
         
         query=self.process_newquery(self.train_dir,quelis,que=True)
         gallery=self.process_newquery(self.train_dir,quelis,que=False)
+        self.checkid(query,gallery)
         # print("query",len(query))
         # print("gallery",len(gallery))
         # train = self.process_dir(self.train_dir)
@@ -377,7 +389,16 @@ class Pengcheng(ImageDataset):
     #     sublist_1 = full_list[:offset]
     #     sublist_2 = full_list[offset:]
     #     return query, train
-
+    def checkid(self,query,gallery):
+        q=[]
+        g=[]
+        for i in query:
+            q.append(i[1])
+        for i in gallery:
+            g.append(i[1])
+        for i in q:
+            if i not in g:
+                print("not appear",i)
     def process_dir(self, dir_path, is_train=True):
         img_paths = glob.glob(osp.join(dir_path, '*.png'))
         #pattern = re.compile(r'([-\d]+)_c(\d)')
