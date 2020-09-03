@@ -2,6 +2,6 @@ _BASE_: "../Base-bagtricks_101.yml"
 
 DATASETS:
   NAMES: ("Pengcheng",)
-  TESTS: ("Market1501",)
+  TESTS: ("Pengcheng",)
 
 OUTPUT_DIR: "logs/NAIC/bagtricks_R101"
