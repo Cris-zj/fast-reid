@@ -27,6 +27,8 @@ To train a model with "train_net.py", first setup up the corresponding datasets 
 ./tools/train_net.py --config-file ./configs/NAIC/bagtricks_R50.yml MODEL.DEVICE "cuda:0"
 
 CUDA_VISIBLE_DEVICES=1 python ./tools/train_net.py --config-file ./configs/NAIC/bagtricks_R50.yml MODEL.DEVICE "cuda:0"
+
+CUDA_VISIBLE_DEVICES=1 python ./tools/train_net.py --config-file ./configs/NAIC/bagtricks_R101.yml MODEL.DEVICE "cuda:0"
 ```
 
 The configs are made for 1-GPU training.
