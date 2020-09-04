@@ -293,26 +293,19 @@ class Pengcheng(ImageDataset):
 
     def __init__(self, root='datasets', pengcheng=False, **kwargs):
 
-        # self.root = osp.abspath(osp.expanduser(root))
         self.root = root
         self.dataset_dir = osp.join(self.root, self.dataset_dir)
 
-        # allow alternative directory structure
         self.data_dir = self.dataset_dir
         data_dir = osp.join(self.data_dir, 'pengcheng')
         if osp.isdir(data_dir):
             self.data_dir = data_dir
         else:
-            # warnings.warn('The current data structure is deprecated. Please '
-            #               'put data folders such as "bounding_box_train" under '
-            #               '"Market-1501-v15.09.15".')
             print("")
-        self.label_txt=osp.join(data_dir,'train/new_label.txt')
+        self.label_txt = osp.join(data_dir,'train/new_label.txt')
         self.train_dir = osp.join(data_dir, 'train/images')
         self.query_dir = osp.join(data_dir, 'market/query')
         self.gallery_dir = osp.join(data_dir, 'market/gallery')
-        #self.extra_gallery_dir = osp.join(self.data_dir, 'images')
-        #self.market1501_500k = market1501_500k
 
         required_files = [
             self.data_dir,
@@ -320,44 +313,29 @@ class Pengcheng(ImageDataset):
             self.query_dir,
             self.gallery_dir,
         ]
-        # if self.market1501_500k:
-        #     required_files.append(self.extra_gallery_dir)
-        #self.check_before_run(required_files)
-        self.count=0
+
         self.label = {}
         self.process_label(self.label_txt)
-        self.label_new={}
+        self.label_new = {}
         self.process_newlabel(self.label)
-        self.lab=[]
+        self.lab = []
         for i in self.label_new.keys():
             self.lab.append(i)
-        #print(self.lab)
-        #quelis,trainlis=split(self.lab)
-        quelis=[]
-        trainlis=[]
+
+        quelis = []
+        trainlis = []
         f=open('query.txt')
         for line in f:
             quelis.append(str(int(line)))
         f=open('train.txt')
         for line in f:
             trainlis.append(str(int(line)))
-        print(len(quelis))
-        print(len(trainlis))
 
-        #print(len(trainlis))
-        train=self.process_newtrain(self.train_dir,trainlis)
-        
-        query=self.process_newquery(self.train_dir,quelis,que=True)
-        gallery=self.process_newquery(self.train_dir,quelis,que=False)
+        train = self.process_newtrain(self.train_dir,trainlis)
+        query = self.process_newquery(self.train_dir,quelis,que = True)
+        gallery = self.process_newquery(self.train_dir,quelis,que = False)
         self.checkid(query,gallery)
-        # print("query",len(query))
-        # print("gallery",len(gallery))
-        # train = self.process_dir(self.train_dir)
-        # #print("11",len(train))
-        # query = self.process_query(self.query_dir, is_train=False)
-        # gallery = self.process_query(self.gallery_dir, is_train=False)
-        #if self.market1501_500k:
-        #    gallery += self.process_dir(self.extra_gallery_dir, is_train=False)
+
         super(Pengcheng, self).__init__(train, query, gallery, **kwargs)
 
 
@@ -379,19 +357,9 @@ class Pengcheng(ImageDataset):
 
         return data
 
-    # def split(full_list, shuffle=True, ratio=0.06):
-    #     n_total = len(full_list)
-    #     offset = int(n_total * ratio)
-    #     if n_total == 0 or offset < 1:
-    #         return [], full_list
-    #     if shuffle:
-    #         random.shuffle(full_list)
-    #     sublist_1 = full_list[:offset]
-    #     sublist_2 = full_list[offset:]
-    #     return query, train
     def checkid(self,query,gallery):
-        q=[]
-        g=[]
+        q = []
+        g = []
         for i in query:
             q.append(i[1])
         for i in gallery:
@@ -401,19 +369,12 @@ class Pengcheng(ImageDataset):
                 print("not appear",i)
     def process_dir(self, dir_path, is_train=True):
         img_paths = glob.glob(osp.join(dir_path, '*.png'))
-        #pattern = re.compile(r'([-\d]+)_c(\d)')
         data = []
-        camid=1
+        camid = 1
         for img_path in img_paths:
-            img=img_path.split("/")[-1]
+            img = img_path.split("/")[-1]
             if img in self.label:
-                pid=self.label[img]
-            # pid, camid = map(int, pattern.search(img_path).groups())
-            # if pid == -1:
-            #     continue  # junk images are just ignored
-            # assert 0 <= pid <= 1501  # pid == 0 means background
-            # assert 1 <= camid <= 6
-            # camid -= 1  # index starts from 0
+                pid = self.label[img]
                 if is_train:
                     pid = self.dataset_name + "_" + str(pid)
                 data.append((img_path, pid,camid))
@@ -421,43 +382,42 @@ class Pengcheng(ImageDataset):
         return data
 
     def process_label(self,label_file):
-        f=open(label_file,encoding="utf-8")
+        f = open(label_file,encoding="utf-8")
 
         while True:
-            #self.count=self.count+1
-            content=f.readline()
-            if content=='':
+            content = f.readline()
+            if content == '':
                 break
-            img,id=content.strip().split(':')
+            img,id = content.strip().split(':')
             self.label[img]=id
-        #print("count",count)
         f.close()
     def process_newlabel(self,label_file):
         for key, val in label_file.items():
-            a=[]
+            a = []
             a.append(key)
-            #print(a)
-            #print(self.label_new.keys())
+
             if val in self.label_new.keys():
                 self.label_new[val].append(key)
             else:
-                self.label_new[val]=a
+                self.label_new[val] = a
 
     def process_newtrain(self,datadir,labellist):
-        data=[]
+        data = []
         for i in labellist:
             for k in self.label_new[i]:
-                data.append((osp.join(datadir,k),i,1))
+                pid = self.dataset_name + "_" + str(i)
+                data.append((osp.join(datadir,k),pid,1))
         return data
     def process_newquery(self,datadir,quelist,que=True):
-        data=[]
+        data = []
+        
         if que:
             for i in quelist:               
-                data.append((osp.join(datadir,self.label_new[i][0]),i,1))
+                data.append((osp.join(datadir,self.label_new[i][0]),int(i),1))
         else:
             for i in quelist:
-                for k in self.label_new[i][1:]:
-                    data.append((osp.join(datadir,k),i,1))
+                for k in self.label_new[i][1:]:                   
+                    data.append((osp.join(datadir,k),int(i),2))
         return data
 
 
